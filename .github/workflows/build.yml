@@ -59,6 +59,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.event.inputs.arg_packname }}${{ env.FILE_DATE }}
+        tag_name: ${{ github.event.inputs.arg_packname }}_${{ github.event.inputs.arg_branch }}${{ env.FILE_DATE }}
         body_path: release.txt
         files: ${{ env.RELEASE_PATH }}/*.flatpak
