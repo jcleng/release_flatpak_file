@@ -18,6 +18,8 @@ on:
         description: '实际安装路径, 默认即可'
         required: true
         default: '/var/lib/flatpak/repo'
+
+name: RUN BUILD
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -38,7 +40,7 @@ jobs:
 
     - name: export .flatpak file
       run: |
-        sudo build-bundle ${{ github.event.inputs.arg_type }} ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
+        sudo flatpak build-bundle ${{ github.event.inputs.arg_type }} ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
 
     - name: Release set path
       run: |
