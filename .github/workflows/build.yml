@@ -1,0 +1,56 @@
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      arg_type:
+        description: '类型: --runtime/--app'
+        required: true
+        default: '--runtime'
+      arg_packname:
+        description: '比如: org.freedesktop.Sdk'
+        required: true
+        default: ''
+      arg_branch:
+        description: '分支: stable/22.08'
+        required: true
+        default: '22.08'
+      arg_repopath:
+        description: '实际安装路径, 默认即可'
+        required: true
+        default: '/var/lib/flatpak/repo'
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Initialization environment
+      run: |
+        echo $(nproc)
+        free -h
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install flatpak
+
+    - name: install app
+      run: |
+        sudo -E apt-get -qq install flatpak
+        sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        sudo flatpak install ${{ github.event.inputs.arg_type }} flathub ${{ github.event.inputs.arg_packname }}//${{ github.event.inputs.arg_branch }} -y
+
+    - name: export .flatpak file
+      run: |
+        sudo build-bundle ${{ github.event.inputs.arg_type }} ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
+
+    - name: Release set path
+      run: |
+        touch release.txt
+        echo "RELEASE_PATH=$PWD" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.inputs.arg_packname }}${{ env.FILE_DATE }}
+        body_path: release.txt
+        files: ${{ env.RELEASE_PATH }}/*.flatpak
