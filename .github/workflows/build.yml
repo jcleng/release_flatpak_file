@@ -39,8 +39,14 @@ jobs:
         sudo flatpak install ${{ github.event.inputs.arg_type }} flathub ${{ github.event.inputs.arg_packname }}//${{ github.event.inputs.arg_branch }} -y
 
     - name: export .flatpak file
+      if: github.event.inputs.arg_type == '--runtime'
       run: |
         sudo flatpak build-bundle ${{ github.event.inputs.arg_type }} ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
+
+    - name: export .flatpak file
+      if: github.event.inputs.arg_type == '--app'
+      run: |
+        sudo flatpak build-bundle ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
 
     - name: Release set path
       run: |
