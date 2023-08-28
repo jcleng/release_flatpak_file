@@ -8,3 +8,7 @@
 
 .. image:: https://img1.imgtp.com/2023/08/27/EV3ffAV4.png
    :width: 300px
+
+通常app的分支是stable,运行时的分支是版本号
+
+通常app只需要一个Platform运行时就可以运行了
