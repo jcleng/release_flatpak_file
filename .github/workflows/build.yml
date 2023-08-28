@@ -7,7 +7,7 @@ on:
         required: true
         default: '--runtime'
       arg_packname:
-        description: '比如: org.freedesktop.Sdk'
+        description: '包名比如: org.freedesktop.Sdk'
         required: true
         default: ''
       arg_branch:
@@ -18,6 +18,10 @@ on:
         description: '实际安装路径, 默认即可'
         required: true
         default: '/var/lib/flatpak/repo'
+      arg_export_all:
+        description: '是否导出所有相关依赖包'
+        required: true
+        default: 'false'
 
 name: RUN BUILD
 jobs:
@@ -39,14 +43,23 @@ jobs:
         sudo flatpak install ${{ github.event.inputs.arg_type }} flathub ${{ github.event.inputs.arg_packname }}//${{ github.event.inputs.arg_branch }} -y
 
     - name: export .flatpak file
-      if: github.event.inputs.arg_type == '--runtime'
+      if: github.event.inputs.arg_type == '--runtime' && github.event.inputs.arg_export_all == 'false'
       run: |
         sudo flatpak build-bundle ${{ github.event.inputs.arg_type }} ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}_${{ github.event.inputs.arg_branch }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
 
     - name: export .flatpak file
-      if: github.event.inputs.arg_type == '--app'
+      if: github.event.inputs.arg_type == '--app' && github.event.inputs.arg_export_all == 'false'
       run: |
         sudo flatpak build-bundle ${{ github.event.inputs.arg_repopath }} ${{ github.event.inputs.arg_packname }}_${{ github.event.inputs.arg_branch }}.flatpak ${{ github.event.inputs.arg_packname }} ${{ github.event.inputs.arg_branch }}
+
+    # 全部导出
+    - name: export .flatpak all
+      if: github.event.inputs.arg_export_all != 'false'
+      run: |
+        # 导出app
+        flatpak list --app --columns=application,branch|awk '{printf "flatpak build-bundle /var/lib/flatpak/repo "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
+        # 导出runtime
+        flatpak list --runtime --columns=application,branch|awk '{printf "flatpak build-bundle /var/lib/flatpak/repo --runtime "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
 
     - name: Release set path
       run: |
