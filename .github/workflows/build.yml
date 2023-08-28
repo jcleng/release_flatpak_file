@@ -57,9 +57,9 @@ jobs:
       if: github.event.inputs.arg_export_all != 'false'
       run: |
         # 导出app
-        flatpak list --app --columns=application,branch|awk '{printf "flatpak build-bundle /var/lib/flatpak/repo "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
+        flatpak list --app --columns=application,branch|awk '{printf "flatpak build-bundle ${{ github.event.inputs.arg_repopath }} "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
         # 导出runtime
-        flatpak list --runtime --columns=application,branch|awk '{printf "flatpak build-bundle /var/lib/flatpak/repo --runtime "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
+        flatpak list --runtime --columns=application,branch|awk '{printf "flatpak build-bundle ${{ github.event.inputs.arg_repopath }} --runtime "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
 
     - name: Release set path
       run: |
