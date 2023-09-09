@@ -1,0 +1,64 @@
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      arg_packname:
+        description: '.flatpakref文件地址'
+        required: true
+        default: ''
+      arg_repopath:
+        description: '实际安装路径, 默认即可'
+        required: true
+        default: '/var/lib/flatpak/repo'
+      arg_export_all:
+        description: '是否导出所有相关依赖包'
+        required: true
+        default: 'false'
+
+name: install .flatpakref
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Initialization environment
+      run: |
+        echo $(nproc)
+        free -h
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install flatpak
+
+    - name: install app
+      run: |
+        sudo -E apt-get -qq install flatpak
+        sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        sudo flatpak install ${{ github.event.inputs.arg_packname }} -y
+
+    - name: export .flatpak app
+      if: github.event.inputs.arg_export_all != 'true'
+      run: |
+        # 导出app
+        sudo flatpak list --app --columns=application,branch|awk '{printf "sudo flatpak build-bundle ${{ github.event.inputs.arg_repopath }} "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
+
+    - name: export .flatpak app and runtime
+      if: github.event.inputs.arg_export_all == 'true'
+      run: |
+        # 导出app
+        sudo flatpak list --app --columns=application,branch|awk '{printf "sudo flatpak build-bundle ${{ github.event.inputs.arg_repopath }} "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
+        # 导出runtime
+        sudo flatpak list --runtime --columns=application,branch|awk '{printf "sudo flatpak build-bundle ${{ github.event.inputs.arg_repopath }} --runtime "$1"_"$2".flatpak "$1" "$2"\n"}'|xargs -I {} bash -c {}
+
+    - name: Release set path
+      run: |
+        md5sum ./*.flatpak>release.txt
+        echo "RELEASE_PATH=$PWD" >> $GITHUB_ENV
+        echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.FILE_DATE }}
+        body_path: release.txt
+        files: ${{ env.RELEASE_PATH }}/*.flatpak
